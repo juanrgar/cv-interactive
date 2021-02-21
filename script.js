@@ -24,16 +24,21 @@ class Shell {
         this._main = null;
         this._line_nb = 0;
         this._col_nb = 0
+
+        this._caret_timer = null;
     }
 
     init() {
         this._main = document.getElementById("main");
+        document.addEventListener('keypress', this._on_keypress.bind(this));
+        document.addEventListener('keydown', this._on_keydown.bind(this));
         this._add_empty_line();
     }
 
     _add_empty_line() {
         let line = this._new_prompt_line();
         this._main.appendChild(line);
+        this._start_cursor();
     }
 
     _new_prompt_line() {
@@ -43,9 +48,31 @@ class Shell {
         this._line_nb++;
         return line;
     }
+
+    _start_cursor() {
+        this._caret_timer = setInterval(this._blink_cursor.bind(this), CURSOR_INTERVAL);
+    }
+
+    _blink_cursor() {
+        let last_line = this._main.lastChild.innerHTML;
+        if (last_line.charAt(last_line.length - 1) == CURSOR_CHAR) {
+            last_line = last_line.substring(0, last_line.length - 1);
+        } else {
+            last_line += CURSOR_CHAR;
+        }
+        this._main.lastChild.innerHTML = last_line;
+    }
+
+    _on_keypress(e) {
+    }
+
+    _on_keydown(e) {
+    }
 }
 
 const PROMPT = "~ guest$";
+const CURSOR_INTERVAL = 600;
+const CURSOR_CHAR = '|';
 
 const shell = new Shell(PROMPT);
 
