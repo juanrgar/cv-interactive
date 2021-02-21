@@ -25,32 +25,47 @@ class Shell {
         this._line_nb = 0;
         this._col_nb = 0
 
-        this._caret_timer = null;
+        this._cursor_timer = null;
+
+        this._commands = {
+            'ls': this._cmd_ls,
+            'pwd' : this._cmd_pwd
+        };
     }
 
     init() {
         this._main = document.getElementById("main");
         document.addEventListener('keypress', this._on_keypress.bind(this));
         document.addEventListener('keydown', this._on_keydown.bind(this));
-        this._add_empty_line();
-    }
-
-    _add_empty_line() {
-        let line = this._new_prompt_line();
-        this._main.appendChild(line);
+        this._add_prompt_line();
         this._start_cursor();
     }
 
-    _new_prompt_line() {
+    _add_line(text = '') {
         let line = document.createElement("div");
         line.id = "line" + this._line_nb;
-        line.innerHTML = this._prompt;
+        line.innerHTML = text;
         this._line_nb++;
+        this._main.appendChild(line);
         return line;
     }
 
+    _add_prompt_line() {
+        let line = this._add_line();
+        line.innerHTML = this._prompt;
+    }
+
     _start_cursor() {
-        this._caret_timer = setInterval(this._blink_cursor.bind(this), CURSOR_INTERVAL);
+        this._cursor_timer = window.setInterval(this._blink_cursor.bind(this), CURSOR_INTERVAL);
+    }
+
+    _stop_cursor() {
+        window.clearInterval(this._cursor_timer);
+        let last_line = this._main.lastChild.innerHTML;
+        if (last_line.charAt(last_line.length - 1) == CURSOR_CHAR) {
+            last_line = last_line.substring(0, last_line.length - 1);
+        }
+        this._main.lastChild.innerHTML = last_line;
     }
 
     _blink_cursor() {
@@ -64,15 +79,75 @@ class Shell {
     }
 
     _on_keypress(e) {
+        console.log('keypress ' + e.charCode);
+        console.log('keypress ' + e.keyCode);
+        console.log('keypress ' + e.which);
+        this._stop_cursor();
+        if (e.charCode == CHAR_CR) {
+            this._enter();
+        } else if (e.charCode == CHAR_BS) {
+            this._backspace();
+        } else {
+            let ch = String.fromCharCode(e.charCode);
+            this._append_to_current_line(ch);
+        }
+        this._start_cursor();
     }
 
     _on_keydown(e) {
+        console.log('keydown ' + e.charCode);
+        console.log('keydown ' + e.keyCode);
+        console.log('keydown ' + e.which);
+        if (e.charCode == CHAR_CR) {
+            this._enter();
+        } else if (e.charCode == CHAR_BS) {
+            this._backspace();
+        }
+    }
+
+    _append_to_current_line(ch) {
+        this._main.lastChild.innerHTML += ch;
+        this._col_nb++;
+    }
+
+    _enter() {
+        let last_line = this._main.lastChild.innerHTML;
+        let cmd = last_line.substring(PROMPT.length);
+        this._process_command(cmd);
+        this._add_prompt_line();
+    }
+
+    _backspace() {
+        let last_line = this._main.lastChild.innerHTML;
+        last_line = last_line.substring(0, last_line.length - 1);
+        this._main.lastChild.innerHTML = last_line;
+        this._col_nb--;
+    }
+
+    _process_command(cmd) {
+        if (cmd in this._commands) {
+            let fn = this._commands[cmd];
+            let args = cmd.substring(cmd.length);
+            fn.call(this, args);
+        } else {
+            this._add_line('Command not found: ' + cmd);
+        }
+    }
+
+    _cmd_ls(args) {
+        console.log(args);
+    }
+
+    _cmd_pwd(args) {
+        console.log(args);
     }
 }
 
-const PROMPT = "~ guest$";
+const PROMPT = "~ guest$ ";
 const CURSOR_INTERVAL = 600;
 const CURSOR_CHAR = '|';
+const CHAR_CR = 13;
+const CHAR_BS = 8;
 
 const shell = new Shell(PROMPT);
 
