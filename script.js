@@ -29,7 +29,8 @@ class Shell {
 
         this._commands = {
             'ls': this._cmd_ls,
-            'pwd' : this._cmd_pwd
+            'pwd' : this._cmd_pwd,
+            'cat' : this._cmd_cat
         };
     }
 
@@ -46,6 +47,7 @@ class Shell {
         line.id = "line" + this._line_nb;
         line.innerHTML = text;
         this._line_nb++;
+        this._col_nb = 0;
         this._main.appendChild(line);
         return line;
     }
@@ -61,28 +63,26 @@ class Shell {
 
     _stop_cursor() {
         window.clearInterval(this._cursor_timer);
-        let last_line = this._main.lastChild.innerHTML;
+        let last_line = this._get_last_line();
         if (last_line.charAt(last_line.length - 1) == CURSOR_CHAR) {
             last_line = last_line.substring(0, last_line.length - 1);
         }
-        this._main.lastChild.innerHTML = last_line;
+        this._set_last_line(last_line);
     }
 
     _blink_cursor() {
-        let last_line = this._main.lastChild.innerHTML;
+        let last_line = this._get_last_line();
         if (last_line.charAt(last_line.length - 1) == CURSOR_CHAR) {
             last_line = last_line.substring(0, last_line.length - 1);
         } else {
             last_line += CURSOR_CHAR;
         }
-        this._main.lastChild.innerHTML = last_line;
+        this._set_last_line(last_line);
     }
 
     _on_keypress(e) {
         if (e.charCode == CHAR_CR) {
             this._enter();
-        } else if (e.charCode == CHAR_SPACE) {
-            this._append_to_current_line('&nbsp;');
         } else {
             let ch = String.fromCharCode(e.charCode);
             this._append_to_current_line(ch);
@@ -92,30 +92,50 @@ class Shell {
 
     _on_keydown(e) {
         this._stop_cursor();
-        if (e.charCode == CHAR_BS) {
+        let handled = false;
+        if (e.keyCode == CHAR_BS) {
             this._backspace();
-        } else if (e.charCode == CHAR_TAB) {
+            handled = true;
+        } else if (e.keyCode == CHAR_TAB) {
             this._tab();
+            handled = true;
+        }
+
+        if (handled) {
+            this._start_cursor();
         }
     }
 
     _append_to_current_line(ch) {
-        this._main.lastChild.innerHTML += ch;
+        let line = this._get_last_line();
+        line += ch;
+        this._set_last_line(line);
         this._col_nb++;
     }
 
+    _get_last_line() {
+        let line = this._main.lastChild.innerHTML;
+        line = line.replaceAll(HTML_SPACE, ' ');
+        return line;
+    }
+
+    _set_last_line(line) {
+        line = line.replaceAll(' ', HTML_SPACE);
+        this._main.lastChild.innerHTML = line;
+    }
+
     _enter() {
-        let last_line = this._main.lastChild.innerHTML;
+        let last_line = this._get_last_line();
         let cmd = last_line.substring(PROMPT.length);
-        this._process_command(cmd);
+        this._process_line(cmd);
         this._add_prompt_line();
     }
 
     _backspace() {
-        let last_line = this._main.lastChild.innerHTML;
+        let last_line = this._get_last_line();
         if (last_line.length > PROMPT.length) {
             last_line = last_line.substring(0, last_line.length - 1);
-            this._main.lastChild.innerHTML = last_line;
+            this._set_last_line(last_line);
             this._col_nb--;
         }
     }
@@ -123,14 +143,19 @@ class Shell {
     _tab() {
     }
 
-    _process_command(cmd) {
-        if (cmd.length == 0) {
+    _process_line(line) {
+        if (line.length == 0) {
             return;
         }
 
+        line = line.trim();
+        console.log(line);
+        let cmd = line.split(' ')[0];
+
         if (cmd in this._commands) {
             let fn = this._commands[cmd];
-            let args = cmd.substring(cmd.length);
+            let args = line.substring(cmd.length).trim().split(' ');
+            console.log(args);
             fn.call(this, args);
         } else {
             this._add_line('Command not found: ' + cmd);
@@ -144,6 +169,10 @@ class Shell {
     _cmd_pwd(args) {
         console.log(args);
     }
+
+    _cmd_cat(args) {
+        console.log(args);
+    }
 }
 
 const PROMPT = "~ guest$ ";
@@ -153,6 +182,7 @@ const CHAR_BS = 8;
 const CHAR_TAB = 9;
 const CHAR_CR = 13;
 const CHAR_SPACE = 32;
+const HTML_SPACE = '&nbsp;';
 
 const shell = new Shell(PROMPT);
 
