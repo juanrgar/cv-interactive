@@ -3,5 +3,6 @@ body {
     color: #eaeaea;
     font-family: monospace;
     font-size: xx-large;
+    word-wrap: break-word;
 }
 

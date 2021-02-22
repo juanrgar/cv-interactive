@@ -79,14 +79,10 @@ class Shell {
     }
 
     _on_keypress(e) {
-        console.log('keypress ' + e.charCode);
-        console.log('keypress ' + e.keyCode);
-        console.log('keypress ' + e.which);
-        this._stop_cursor();
         if (e.charCode == CHAR_CR) {
             this._enter();
-        } else if (e.charCode == CHAR_BS) {
-            this._backspace();
+        } else if (e.charCode == CHAR_SPACE) {
+            this._append_to_current_line('&nbsp;');
         } else {
             let ch = String.fromCharCode(e.charCode);
             this._append_to_current_line(ch);
@@ -95,13 +91,11 @@ class Shell {
     }
 
     _on_keydown(e) {
-        console.log('keydown ' + e.charCode);
-        console.log('keydown ' + e.keyCode);
-        console.log('keydown ' + e.which);
-        if (e.charCode == CHAR_CR) {
-            this._enter();
-        } else if (e.charCode == CHAR_BS) {
+        this._stop_cursor();
+        if (e.charCode == CHAR_BS) {
             this._backspace();
+        } else if (e.charCode == CHAR_TAB) {
+            this._tab();
         }
     }
 
@@ -119,12 +113,21 @@ class Shell {
 
     _backspace() {
         let last_line = this._main.lastChild.innerHTML;
-        last_line = last_line.substring(0, last_line.length - 1);
-        this._main.lastChild.innerHTML = last_line;
-        this._col_nb--;
+        if (last_line.length > PROMPT.length) {
+            last_line = last_line.substring(0, last_line.length - 1);
+            this._main.lastChild.innerHTML = last_line;
+            this._col_nb--;
+        }
+    }
+
+    _tab() {
     }
 
     _process_command(cmd) {
+        if (cmd.length == 0) {
+            return;
+        }
+
         if (cmd in this._commands) {
             let fn = this._commands[cmd];
             let args = cmd.substring(cmd.length);
@@ -146,12 +149,13 @@ class Shell {
 const PROMPT = "~ guest$ ";
 const CURSOR_INTERVAL = 600;
 const CURSOR_CHAR = '|';
-const CHAR_CR = 13;
 const CHAR_BS = 8;
+const CHAR_TAB = 9;
+const CHAR_CR = 13;
+const CHAR_SPACE = 32;
 
 const shell = new Shell(PROMPT);
 
 $(function() {
     shell.init();
 });
-
