@@ -53,8 +53,8 @@ class Shell {
     }
 
     _add_prompt_line() {
-        let line = this._add_line();
-        line.innerHTML = this._prompt;
+        this._add_line();
+        this._set_last_line(this._prompt);
     }
 
     _start_cursor() {
@@ -163,7 +163,7 @@ class Shell {
     }
 
     _cmd_ls(args) {
-        console.log(args);
+        this._add_line('intro  academic  work');
     }
 
     _cmd_pwd(args) {
@@ -172,6 +172,28 @@ class Shell {
 
     _cmd_cat(args) {
         console.log(args);
+        for (const filename of args) {
+            console.log('requesting ' + filename);
+            this._request_file(filename, function(text) {
+                console.log('cb');
+                console.log(text);
+                this._add_line(text);
+            }.bind(this));
+        }
+    }
+
+    _request_file(filename, done_cb) {
+        let request = new XMLHttpRequest;
+        request.onload = function() {
+            console.log('onload ' + request.status);
+            if (request.response) {
+                console.log('request.response ' + request.response);
+                done_cb(request.response);
+            }
+        };
+
+        request.open('GET', 'sections/' + filename + '.html');
+        request.send();
     }
 }
 
