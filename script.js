@@ -197,7 +197,7 @@ class Shell {
     }
 }
 
-const PROMPT = "~ guest$ ";
+const PROMPT = "juanrgar@nebuchadnezzar ~$ ";
 const CURSOR_INTERVAL = 600;
 const CURSOR_CHAR = '|';
 const CHAR_BS = 8;
