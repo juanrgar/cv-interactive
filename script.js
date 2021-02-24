@@ -42,10 +42,11 @@ class Shell {
         this._start_cursor();
     }
 
-    _add_line(text = '') {
+    _add_line(text = '', cls = CSS_CLASS_PROMPT) {
         let line = document.createElement("div");
         line.id = "line" + this._line_nb;
         line.innerHTML = text;
+        line.className = cls;
         this._line_nb++;
         this._col_nb = 0;
         this._main.appendChild(line);
@@ -53,8 +54,7 @@ class Shell {
     }
 
     _add_prompt_line() {
-        this._add_line();
-        this._set_last_line(this._prompt);
+        this._add_line(this._prompt);
     }
 
     _start_cursor() {
@@ -159,12 +159,12 @@ class Shell {
             console.log(args);
             fn.call(this, args, cont_cb);
         } else {
-            this._add_line('Command not found: ' + cmd);
+            this._add_line('Command not found: ' + cmd, CSS_CLASS_CMD_OUT);
         }
     }
 
     _cmd_ls(args, cont_cb) {
-        this._add_line('intro  academic  work');
+        this._add_line('intro  skills  education  languages  work', CSS_CLASS_CMD_OUT);
         cont_cb.call(this);
     }
 
@@ -176,23 +176,28 @@ class Shell {
     _cmd_cat(args, cont_cb) {
         console.log(args);
         for (const filename of args) {
-            console.log('requesting ' + filename);
-            this._request_file(filename, function(text) {
-                console.log('cb');
-                console.log(text);
-                this._add_line(text);
-                cont_cb.call(this);
-            }.bind(this));
+            this._request_file(filename,
+                function(text) {
+                    const lines = text.split('\n');
+                    for (let l of lines) {
+                        this._add_line(l, CSS_CLASS_CMD_OUT);
+                    }
+                    cont_cb.call(this);
+                }.bind(this), 
+                function() {
+                    this._add_line('cat: ' + filename + ': No such file or directory', CSS_CLASS_CMD_OUT);
+                    cont_cb.call(this);
+                }.bind(this));
         }
     }
 
-    _request_file(filename, done_cb) {
+    _request_file(filename, done_cb, not_found_cb) {
         let request = new XMLHttpRequest;
         request.onload = function() {
-            console.log('onload ' + request.status);
-            if (request.response) {
-                console.log('request.response ' + request.response);
-                done_cb(request.response);
+            if (request.status == 200) {
+                done_cb(request.responseText);
+            } else {
+                not_found_cb();
             }
         };
 
@@ -209,6 +214,8 @@ const CHAR_TAB = 9;
 const CHAR_CR = 13;
 const CHAR_SPACE = 32;
 const HTML_SPACE = '&nbsp;';
+const CSS_CLASS_PROMPT = 'prompt';
+const CSS_CLASS_CMD_OUT = 'cmd-out';
 
 const shell = new Shell(PROMPT);
 
