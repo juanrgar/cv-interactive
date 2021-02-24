@@ -127,8 +127,9 @@ class Shell {
     _enter() {
         let last_line = this._get_last_line();
         let cmd = last_line.substring(PROMPT.length);
-        this._process_line(cmd);
-        this._add_prompt_line();
+        this._process_line(cmd, function() {
+            this._add_prompt_line();
+        }.bind(this));
     }
 
     _backspace() {
@@ -143,7 +144,7 @@ class Shell {
     _tab() {
     }
 
-    _process_line(line) {
+    _process_line(line, cont_cb) {
         if (line.length == 0) {
             return;
         }
@@ -156,21 +157,23 @@ class Shell {
             let fn = this._commands[cmd];
             let args = line.substring(cmd.length).trim().split(' ');
             console.log(args);
-            fn.call(this, args);
+            fn.call(this, args, cont_cb);
         } else {
             this._add_line('Command not found: ' + cmd);
         }
     }
 
-    _cmd_ls(args) {
+    _cmd_ls(args, cont_cb) {
         this._add_line('intro  academic  work');
+        cont_cb.call(this);
     }
 
-    _cmd_pwd(args) {
+    _cmd_pwd(args, cont_cb) {
         console.log(args);
+        cont_cb.call(this);
     }
 
-    _cmd_cat(args) {
+    _cmd_cat(args, cont_cb) {
         console.log(args);
         for (const filename of args) {
             console.log('requesting ' + filename);
@@ -178,6 +181,7 @@ class Shell {
                 console.log('cb');
                 console.log(text);
                 this._add_line(text);
+                cont_cb.call(this);
             }.bind(this));
         }
     }
