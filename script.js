@@ -164,7 +164,7 @@ class Shell {
     }
 
     _cmd_ls(args, cont_cb) {
-        this._add_line('intro  skills  education  languages  work', CSS_CLASS_CMD_OUT);
+        this._add_line(FILES.join('   '), CSS_CLASS_CMD_OUT);
         cont_cb.call(this);
     }
 
@@ -175,38 +175,47 @@ class Shell {
 
     _cmd_cat(args, cont_cb) {
         console.log(args);
-        for (const filename of args) {
-            this._request_file(filename,
-                function(text) {
-                    const lines = text.split('\n');
-                    for (let l of lines) {
-                        this._add_line(l, CSS_CLASS_CMD_OUT);
-                    }
-                    cont_cb.call(this);
-                }.bind(this), 
-                function() {
-                    this._add_line('cat: ' + filename + ': No such file or directory', CSS_CLASS_CMD_OUT);
-                    cont_cb.call(this);
-                }.bind(this));
+        for (let i = 0; i < args.length; i++) {
+            const filename = args[i];
+            if (filename == '*') {
+                this._cmd_cat(FILES, null);
+            } else {
+                this._request_file(filename).then(
+                    (text) => {
+                        const lines = text.split('\n');
+                        for (let l of lines) {
+                            this._add_line(l, CSS_CLASS_CMD_OUT);
+                        }
+                        cont_cb.call(this);
+                    },
+                    (sts) => {
+                        console.log('Error ' + sts + ' while requesting file ' + filename);
+                        this._add_line('cat: ' + filename + ': No such file or directory', CSS_CLASS_CMD_OUT);
+                        cont_cb.call(this);
+                    });
+            }
         }
     }
 
-    _request_file(filename, done_cb, not_found_cb) {
-        let request = new XMLHttpRequest;
-        request.onload = function() {
-            if (request.status == 200) {
-                done_cb(request.responseText);
-            } else {
-                not_found_cb();
-            }
-        };
+    _request_file(filename) {
+        return new Promise(function(resolve, reject) {
+            let req = new XMLHttpRequest;
+            req.onload = function() {
+                if (req.status == 200) {
+                    resolve(req.responseText);
+                } else {
+                    reject(req.status);
+                }
+            };
 
-        request.open('GET', 'sections/' + filename + '.html');
-        request.send();
+            req.open('GET', 'sections/' + filename + '.html');
+            req.send();
+        });
     }
 }
 
 const PROMPT = "juanrgar@nebuchadnezzar ~$ ";
+const FILES = ['intro', 'skills', 'education', 'languages', 'work'];
 const CURSOR_INTERVAL = 600;
 const CURSOR_CHAR = '|';
 const CHAR_BS = 8;
