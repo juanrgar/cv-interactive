@@ -157,44 +157,49 @@ class Shell {
             let fn = this._commands[cmd];
             let args = line.substring(cmd.length).trim().split(' ');
             console.log(args);
-            fn.call(this, args, cont_cb);
+            fn.call(this, args).then(cont_cb);
         } else {
             this._add_line('Command not found: ' + cmd, CSS_CLASS_CMD_OUT);
         }
     }
 
-    _cmd_ls(args, cont_cb) {
-        this._add_line(FILES.join('   '), CSS_CLASS_CMD_OUT);
-        cont_cb.call(this);
+    _cmd_ls(args) {
+        return new Promise((resolve) => {
+            this._add_line(FILES.join('   '), CSS_CLASS_CMD_OUT);
+            resolve();
+        });
     }
 
-    _cmd_pwd(args, cont_cb) {
-        console.log(args);
-        cont_cb.call(this);
+    _cmd_pwd(args) {
+        return new Promise((resolve) => {
+            resolve();
+        });
     }
 
-    _cmd_cat(args, cont_cb) {
+    _cmd_cat(args) {
         console.log(args);
-        for (let i = 0; i < args.length; i++) {
-            const filename = args[i];
-            if (filename == '*') {
-                this._cmd_cat(FILES, null);
-            } else {
-                this._request_file(filename).then(
-                    (text) => {
-                        const lines = text.split('\n');
-                        for (let l of lines) {
-                            this._add_line(l, CSS_CLASS_CMD_OUT);
-                        }
-                        cont_cb.call(this);
-                    },
-                    (sts) => {
-                        console.log('Error ' + sts + ' while requesting file ' + filename);
-                        this._add_line('cat: ' + filename + ': No such file or directory', CSS_CLASS_CMD_OUT);
-                        cont_cb.call(this);
-                    });
+        return new Promise((resolve, reject) => {
+            for (let i = 0; i < args.length; i++) {
+                const filename = args[i];
+                if (filename == '*') {
+                    this._cmd_cat(FILES, null);
+                } else {
+                    this._request_file(filename).then(
+                        (text) => {
+                            const lines = text.split('\n');
+                            for (let l of lines) {
+                                this._add_line(l, CSS_CLASS_CMD_OUT);
+                            }
+                            resolve();
+                        },
+                        (sts) => {
+                            console.log('Error ' + sts + ' while requesting file ' + filename);
+                            this._add_line('cat: ' + filename + ': No such file or directory', CSS_CLASS_CMD_OUT);
+                            reject();
+                        });
+                }
             }
-        }
+        });
     }
 
     _request_file(filename) {
